@@ -1,5 +1,5 @@
-Masssive, a small, happy, dynamic MicroORM for .NET that will love you forever
-===============================================================================
+﻿Massive, a small, happy, dynamic MicroORM for .NET that will love you forever
+=============================================================================
 
 Massive was started by Rob Conery and [has been transfered](https://twitter.com/robconery/status/573139252487323648) to Frans Bouma on March 4th, 2015. It's a small MicroORM based on the `Expando` or `dynamic` type and allows you to work with your database with almost no effort. The design is based on the idea that the code provided to you in this repository is a start: you get up and running in no-time and from there edit and alter it as you see fit.  
 
@@ -23,6 +23,7 @@ Massive has no external direct dependencies, just get the code, compile it with 
 * PostgreSQL: [Npgsql](http://www.npgsql.org/). The Npgsql distribution contains an installer, offered at the 
 'releases' section. This installer will add the required DbProviderFactory reference and will add the npgsql dll to the gac. 
 * SQLite: Massive uses the official SQLite .NET provider. [Please read the official documentation](https://system.data.sqlite.org/index.html/doc/trunk/www/index.wiki) on that provider to get started. 
+* MySQL: Massive works with the [Oracle/MySQL ADO.NET Driver](https://dev.mysql.com/downloads/connector/net/) (`MySql.Data.MySqlClient`) and with the [Devart dotConnect for MySQL](https://www.devart.com/dotconnect/mysql/download.html) driver (`Devart.Data.MySql`). Be aware of licensing issues. At the time of writing the free version of the Oracle/MySQL driver [must not be used in closed source development](https://www.mysql.com/about/legal/licensing/oem/), though it [can be used in many open source contexts](https://www.mysql.com/about/legal/licensing/foss-exception/). However the free version of the Devart driver [can be used in closed source development subject to some restrictions](https://www.devart.com/dotconnect/mysql/licensing-faq.html). If you want to use the Devart driver, please change the value in property `DbProviderFactoryName` in the [Massive.MySql.cs](https://github.com/FransBouma/Massive/blob/v2.0/src/Massive.MySql.cs) file around [line 280](https://github.com/FransBouma/Massive/blob/v2.0/src/Massive.MySql.cs#L280) to `Devart.Data.MySql`.
 
 ## Migrating from v1.0 to v2.0
 If you're using v1.0 currently and want to migrate to v2.0, please take a look at [What's new in v2.0](https://github.com/FransBouma/Massive/wiki/v2.0-Whats-new) page for more details about whether you'll run into the changes made. In general the breaking changes will be minor, if any. 
@@ -34,6 +35,22 @@ Besides some changes as documented in the [What's new in v2.0](https://github.co
 * Shared code. In v1.0 code which was effectively the same among all supported databases was copy/pasted, in v2.0 Massive uses partial classes and shares as much code as possible among all supported databases. 
 * Unit Tests. In v1.0 there were no tests but in v2.0 we properly implemented a series of tests to see whether things indeed work the way they do. They can also be used as an example how to get started. 
 * Culling of dead code. 
+
+## Contributing
+If you want to add new features to Massive or have a fix for a bug, that's great! There are some rules however and if you don't meet them, I won't merge your code, no matter how long you've worked on it. This is nothing personal, and to many of you these rules might sound rigid, but this repository isn't a playground for newbies: the code is used by many people and they depend on it. It therefore has to be of high quality and changes made to the repository will live on forever so they aren't accepted without review. 
+
+* PRs which are solely about whitespace changes are ignored. 
+* Before sumitting a PR, first open an issue and discuss your proposed change/feature there. This is **mandatory**. Any PR without a linked issue is closed without comment. The main reasoning behind this is that it prevents people wasting time on things that will never make it into the code base or that e.g. a PR requires refactoring before it's being accepted because it doesn't fit into the codebase. ORMs, even small ones like Massive aren't simple: there are a lot of pitfalls and in general non-ORM devs overlook a lot of them. Discussing a change before a PR is a good thing in this case. Also don't be afraid to ask if you don't know how to proceed: that's why the issue is opened. 
+* If your PR contains submissions from others, I can't accept your PR: a committer owns the code of a change. If you commit code into Massive owned by others, it is unclear those others were willing to share that code with the main repository. 
+* Don't change the API nor its current behavior. Massive doesn't have a fixed version number, and is distributed through text files, but I still want the API to be dependable: no method is removed nor has its signature changed. For instance if you want to add functionality to a method and it requires extra arguments for that, you have to add an overload of the method, you can't simply append arguments to a method's signature. 
+Be very careful here. Adding a new overload to a method which has a `params` argument at the end can easily break existing code (by causing it to unintentionally compile against your new method instead of the `params` version). Even simply adding optional parameters to the end of an existing method will break the API, since code which is linked against a pre-compiled version of Massive will fail. I cannot accept changes like this.
+* Tests are preferred. If your change can be tested with the current tests, no new tests are needed. If your change requires additional tests because the current tests don't cover it, add them with your PR.
+* If possible support all databases supported by Massive. I've designed Massive in v2.0 to share as much code as possible across all supported databases. New submissions are required to follow that pattern: for instance large pieces of code specific for SQL Server which are also usable with some tweaks on Oracle are not accepted. Instead the code has to be made generic and added to Massive.Shared, using methods implemented in the specific database partial classes to configure the code for that particular database. This can be a great pain, e.g. because you don't have access to Oracle nor Postgresql. In that case, request what you should add for these databases or that I do that for you and test the changes for you locally using the tests you wrote. 
+* No new files please. There's currently a Massive.Shared.Async, and the sooner I can merge that into Massive.Shared, the better (MS still supporting .NET 3.5 is currently the limitation on that, but it's likely it will be merged in the near future). 
+* Code defensively. If your code accepts input from the user, be absolutely sure this input is passed on as parameters and user crap like null values and name mismatches are covered. You don't need to throw a myriad of exceptions, but at least make a bit of an effort.
+* If it takes less time for me to write the code myself than to look at your PR, tell you how to change things and go into an endless bikeshedding debate with you, chances are I'll write it myself instead of debating things with you. 
+* If you add to the API, it's recommended you add a small example to the documentation in this readme below. Some people think tests are documentation, but tests are tests, they test things. Documentation document things, so it's preferable to have documentation as well. 
+* For the databases which are currently supported there are free downloads available. You can freely assume code which works on SQL Server Express and Oracle Express / developer edition to work on the paid commercial versions, unless you use a feature only available in those paid versions. 
 
 ## Usage
 Note, the following is a work in progress and doesn't contain all the new API methods. It is primarily the original text written by Conery, and I'll update it when I have time. If you're unsure how to use a given method, please look at the [tests](https://github.com/FransBouma/Massive/tree/v2.0/tests).  
@@ -164,7 +181,7 @@ table.Save(drinks.ToArray());
 	
 Named Argument Query Syntax
 -------------------
-I recently added the ability to run more friendly queries using Named Arguments and C#4's Method-on-the-fly syntax. Originally this was trying to be like ActiveRecord, but I figured "C# is NOT Ruby, and Named Arguments can be a lot more clear". In addition, Mark Rendle's Simple.Data is already doing this so ... why duplicate things?
+I recently added the ability to run more friendly queries using Named Arguments and C#4's `DynamicObject.TryInvokeMember` method-on-the-fly syntax. In an earlier version this was trying to be like Rails ActiveRecord (so, calls were like `var drinks = table.FindBy_CategoryID(8);`), but I figured "C# is NOT Ruby, and Named Arguments can be a lot more clear". So now calls look like `var drinks = table.FindBy(CategoryID:8);` (examples below). In addition, Mark Rendle's Simple.Data is already supporting ActiveRecord style syntax, so ... why duplicate things?
 
 If your needs are more complicated - I would suggest just passing in your own SQL with Query().
 

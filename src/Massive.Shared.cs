@@ -1,4 +1,4 @@
-///////////////////////////////////////////////////////////////////////////////////////////////////
+﻿///////////////////////////////////////////////////////////////////////////////////////////////////
 // Massive v2.0. Main code.
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Licensed to you under the New BSD License
@@ -368,7 +368,7 @@ namespace Massive
 
 
 		/// <summary>
-		/// Returns and OpenConnection
+		/// Returns an OpenConnection
 		/// </summary>
 		public virtual DbConnection OpenConnection()
 		{
@@ -601,7 +601,7 @@ namespace Massive
 
 
 		/// <summary>
-		/// Adds a record to the database. You can pass in an Anonymous object, an ExpandoObject, a regular old POCO, or a NameValueColletion from a Request.Form or Request.QueryString
+		/// Adds a record to the database. You can pass in an Anonymous object, an ExpandoObject, a regular old POCO, or a NameValueCollection from a Request.Form or Request.QueryString
 		/// </summary>
 		/// <param name="o">The object to insert.</param>
 		/// <returns>the object inserted as expando. If the PrimaryKeyField is an identity field, it's set in the returned object to the value it received at insert.</returns>
@@ -778,11 +778,14 @@ namespace Massive
 		/// <param name="where">The where clause. Default is empty string. Parameters have to be numbered starting with 0, for each value in args.</param>
 		/// <param name="args">The parameters used in the where clause.</param>
 		/// <returns>number of rows returned after executing the count query</returns>
+		/// <remarks>
+		/// In order to retain cross-DB compatibility we are coercing long values (e.g. MySql) to int values, note that a simple cast would always exception regardless of the value.
+		/// </remarks>
 		public int Count(string tableName = "", string where = "", params object[] args)
 		{
 			var scalarQueryPattern = this.GetCountRowQueryPattern();
 			scalarQueryPattern += ReadifyWhereClause(where);
-			return (int)Scalar(string.Format(scalarQueryPattern, string.IsNullOrEmpty(tableName) ? this.TableName : tableName), args);
+			return Convert.ToInt32(Scalar(string.Format(scalarQueryPattern, string.IsNullOrEmpty(tableName) ? this.TableName : tableName), args));
 		}
 
 
@@ -827,6 +830,10 @@ namespace Massive
 							break;
 						case "columns":
 							columns = args[i].ToString();
+							break;
+						case "where":
+							// add it as-is.
+							wherePredicates.Add(args[i].ToString());
 							break;
 						default:
 							wherePredicates.Add(string.Format(" {0} = {1}", name, this.PrefixParameterName(counter.ToString())));
@@ -936,14 +943,21 @@ namespace Massive
 			foreach(var item in (IDictionary<string, object>)expando)
 			{
 				var val = item.Value;
-				if(!item.Key.Equals(PrimaryKeyField, StringComparison.OrdinalIgnoreCase) && item.Value != null)
+				if(!item.Key.Equals(PrimaryKeyField, StringComparison.OrdinalIgnoreCase))
 				{
-					result.AddParam(val);
-					fieldSetFragments.Add(string.Format("{0} = {1}", item.Key, this.PrefixParameterName(counter.ToString())));
-					counter++;
+					if(item.Value == null)
+					{
+						fieldSetFragments.Add(string.Format("{0} = NULL", item.Key));
+					}
+					else
+					{
+						result.AddParam(val);
+						fieldSetFragments.Add(string.Format("{0} = {1}", item.Key, this.PrefixParameterName(counter.ToString())));
+						counter++;
+					}
 				}
 			}
-			if(counter > 0)
+			if(fieldSetFragments.Count > 0)
 			{
 				result.CommandText = string.Format(updateQueryPattern, TableName, string.Join(", ", fieldSetFragments.ToArray()));
 			}
@@ -967,7 +981,7 @@ namespace Massive
 			var sql = string.Format(this.GetDeleteQueryPattern(), TableName);
 			if(key == null)
 			{
-				sql += ReadifyWhereClause(@where);
+				sql += ReadifyWhereClause(where);
 			}
 			else
 			{
@@ -1108,7 +1122,7 @@ namespace Massive
 			return result;
 		}
 
-		
+
 		/// <summary>
 		/// Executes the database command specified
 		/// </summary>

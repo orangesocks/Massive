@@ -22,6 +22,24 @@ namespace Massive.Tests
 
 
 		[Test]
+		public void MaxOnFilteredSet()
+		{
+			var soh = new SalesOrderHeader();
+			var result = ((dynamic)soh).Max(columns: "SalesOrderID", where: "SalesOrderID<100000");
+			Assert.AreEqual(75123, result);
+		}
+
+
+		[Test]
+		public void MaxOnFilteredSet2()
+		{
+			var soh = new SalesOrderHeader();
+			var result = ((dynamic)soh).Max(columns: "SalesOrderID", TerritoryID:10);
+			Assert.AreEqual(75117, result);
+		}
+
+
+		[Test]
 		public void EmptyElement_ProtoType()
 		{
 			var soh = new SalesOrderHeader();
@@ -195,7 +213,7 @@ namespace Massive.Tests
 
 
 		[Test]
-		public void Find_AliasGet_AllColumns()
+		public void Get_AllColumns()
 		{
 			dynamic soh = new SalesOrderHeader();
 			var singleInstance = soh.Get(SalesOrderID: 43666);
@@ -204,7 +222,7 @@ namespace Massive.Tests
 
 
 		[Test]
-		public void Find_AliasFirst_AllColumns()
+		public void First_AllColumns()
 		{
 			dynamic soh = new SalesOrderHeader();
 			var singleInstance = soh.First(SalesOrderID: 43666);
@@ -213,7 +231,7 @@ namespace Massive.Tests
 
 
 		[Test]
-		public void Find_AliasSingle_AllColumns()
+		public void Single_AllColumns()
 		{
 			dynamic soh = new SalesOrderHeader();
 			var singleInstance = soh.Single(SalesOrderID: 43666);

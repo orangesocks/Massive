@@ -1,9 +1,9 @@
 ﻿///////////////////////////////////////////////////////////////////////////////////////////////////
-// Massive v2.0. SQL Server specific code
+// Massive v2.0. MySQL specific code
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Licensed to you under the New BSD License
 // http://www.opensource.org/licenses/bsd-license.php
-// Massive is copyright (c) 2009-2016 various contributors.
+// Massive is copyright (c) 2009-2017 various contributors.
 // All rights reserved.
 // See for sourcecode, full history and contributors list: https://github.com/FransBouma/Massive
 //
@@ -28,6 +28,7 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.Common;
 using System.Dynamic;
 using System.Linq;
@@ -54,19 +55,25 @@ namespace Massive
 			}
 			else
 			{
-				var o = value as ExpandoObject;
-				if(o == null)
+				if(value is Guid)
 				{
-					p.Value = value;
-					var s = value as string;
-					if(s != null)
-					{
-						p.Size = s.Length > 4000 ? -1 : 4000;
-					}
+					p.Value = value.ToString();
+					p.DbType = DbType.String;
+					p.Size = 36;
+				}
+				else if(value is ExpandoObject)
+				{
+					var d = (IDictionary<string, object>)value;
+					p.Value = d.Values.FirstOrDefault();
 				}
 				else
 				{
-					p.Value = ((IDictionary<string, object>)value).Values.FirstOrDefault();
+					p.Value = value;
+				}
+				var valueAsString = value as string;
+				if(valueAsString != null)
+				{
+					p.Size = valueAsString.Length > 4000 ? -1 : 4000;
 				}
 			}
 			cmd.Parameters.Add(p);
@@ -84,7 +91,7 @@ namespace Massive
 		/// <summary>
 		/// The default sequence name for initializing the pk sequence name value in the ctor. 
 		/// </summary>
-		private const string _defaultSequenceName = "SCOPE_IDENTITY()";
+		private const string _defaultSequenceName = "LAST_INSERT_ID()";
 		/// <summary>
 		/// Flag to signal whether the sequence retrieval call (if any) is executed before the insert query (true) or after (false). Not a const, to avoid warnings. 
 		/// </summary>
@@ -104,18 +111,12 @@ namespace Massive
 			{
 				return null;
 			}
-			dynamic result;
-			switch(defaultValue)
+
+			dynamic result = null;
+			switch(defaultValue.ToUpper())
 			{
-				case "getdate()":
-				case "(getdate())":
+				case "CURRENT_TIMESTAMP":
 					result = DateTime.Now;
-					break;
-				case "newid()":
-					result = Guid.NewGuid().ToString();
-					break;
-				default:
-					result = defaultValue.Replace("(", "").Replace(")", "");
 					break;
 			}
 			return result;
@@ -187,7 +188,7 @@ namespace Massive
 		/// </returns>
 		protected virtual string GetSelectQueryPattern(int limit, string whereClause, string orderByClause)
 		{
-			return string.Format("SELECT{0} {{0}} FROM {{1}}{1}{2}", limit > 0 ? " TOP " + limit : string.Empty, whereClause, orderByClause);
+			return string.Format("SELECT {{0}} FROM {{1}}{0}{1}{2}", whereClause, orderByClause, limit > 0 ? " LIMIT " + limit : string.Empty);
 		}
 
 
@@ -258,31 +259,13 @@ namespace Massive
 		private dynamic BuildPagingQueryPair(string sql = "", string primaryKeyField = "", string whereClause = "", string orderByClause = "", string columns = "*", int pageSize = 20,
 											  int currentPage = 1)
 		{
-			var countSQL = string.IsNullOrEmpty(sql) ? string.Format("SELECT COUNT({0}) FROM {1}", PrimaryKeyField, TableName)
-													 : string.Format("SELECT COUNT({0}) FROM ({1}) AS PagedTable", primaryKeyField, sql);
-			var orderByClauseFragment = orderByClause;
-			if(string.IsNullOrEmpty(orderByClauseFragment))
-			{
-				orderByClauseFragment = string.IsNullOrEmpty(primaryKeyField) ? PrimaryKeyField : primaryKeyField;
-			}
-			var whereClauseFragment = ReadifyWhereClause(whereClause);
-			var query = string.Empty;
-			if(string.IsNullOrEmpty(sql))
-			{
-				query = string.Format("SELECT {0} FROM (SELECT ROW_NUMBER() OVER (ORDER BY {1}) AS Row, {0} FROM {2} {3}) AS Paged ", columns, orderByClauseFragment, TableName, 
-									  whereClauseFragment);
-			}
-			else
-			{
-				query = string.Format("SELECT {0} FROM (SELECT ROW_NUMBER() OVER (ORDER BY {1}) AS Row, {0} FROM ({2}) AS PagedTable {3}) AS Paged ", columns, orderByClauseFragment, sql, 
-									  whereClauseFragment);
-			}
-			var pageStart = (currentPage - 1) * pageSize;
-			query += string.Format(" WHERE Row > {0} AND Row <={1}", pageStart, (pageStart + pageSize));
-			countSQL += whereClauseFragment;
+			var orderByClauseFragment = string.IsNullOrEmpty(orderByClause) ? string.Format(" ORDER BY {0}", string.IsNullOrEmpty(primaryKeyField) ? PrimaryKeyField : primaryKeyField)
+																			: ReadifyOrderByClause(orderByClause);
+			var coreQuery = string.Format(this.GetSelectQueryPattern(0, ReadifyWhereClause(whereClause), orderByClauseFragment), columns, string.IsNullOrEmpty(sql) ? this.TableName : sql);
 			dynamic toReturn = new ExpandoObject();
-			toReturn.MainQuery = query;
-			toReturn.CountQuery = countSQL;
+			toReturn.CountQuery = string.Format("SELECT COUNT(*) FROM ({0}) q", coreQuery);
+			var pageStart = (currentPage - 1) * pageSize;
+			toReturn.MainQuery = string.Format("{0} LIMIT {1} OFFSET {2}", coreQuery, pageSize, (pageStart + pageSize));
 			return toReturn;
 		}
 
@@ -293,7 +276,7 @@ namespace Massive
 		/// </summary>
 		protected virtual string DbProviderFactoryName
 		{
-			get { return "System.Data.SqlClient"; }
+			get { return "MySql.Data.MySqlClient"; }
 		}
 
 		/// <summary>

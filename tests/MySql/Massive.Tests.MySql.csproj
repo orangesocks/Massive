@@ -4,12 +4,12 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{79199955-28FE-4E58-AC0E-9891BF3ECF3C}</ProjectGuid>
+    <ProjectGuid>{67ED2122-3504-4C3C-ADE1-A61F48C6AFB5}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>PostgreSql</RootNamespace>
-    <AssemblyName>PostgreSql</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <RootNamespace>Massive.Tests.MySql</RootNamespace>
+    <AssemblyName>Massive.Tests.MySql</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -49,9 +49,8 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="nunit.framework, Version=2.6.4.14350, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77, processorArchitecture=MSIL">
+    <Reference Include="nunit.framework">
       <HintPath>..\packages\NUnit.2.6.4\lib\nunit.framework.dll</HintPath>
-      <Private>True</Private>
     </Reference>
     <Reference Include="SD.Tools.Algorithmia">
       <HintPath>..\packages\SD.Tools.Algorithmia.1.1.0\lib\SD.Tools.Algorithmia.dll</HintPath>
@@ -60,10 +59,10 @@
       <HintPath>..\packages\SD.Tools.BCLExtensions.1.0.0\lib\SD.Tools.BCLExtensions.dll</HintPath>
     </Reference>
     <Reference Include="SD.Tools.OrmProfiler.Interceptor">
-      <HintPath>..\packages\SD.Tools.OrmProfiler.Interceptor.1.5.20150715\lib\net35\SD.Tools.OrmProfiler.Interceptor.dll</HintPath>
+      <HintPath>..\packages\SD.Tools.OrmProfiler.Interceptor.1.5.20150209\lib\net35\SD.Tools.OrmProfiler.Interceptor.dll</HintPath>
     </Reference>
     <Reference Include="SD.Tools.OrmProfiler.Shared">
-      <HintPath>..\packages\SD.Tools.OrmProfiler.Interceptor.1.5.20150715\lib\net35\SD.Tools.OrmProfiler.Shared.dll</HintPath>
+      <HintPath>..\packages\SD.Tools.OrmProfiler.Interceptor.1.5.20150209\lib\net35\SD.Tools.OrmProfiler.Shared.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.configuration" />
@@ -75,16 +74,18 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\..\src\Massive.PostgreSql.cs">
-      <Link>Massive.PostgreSql.cs</Link>
+    <Compile Include="..\..\src\Massive.MySql.cs">
+      <Link>Massive.MySql.cs</Link>
     </Compile>
     <Compile Include="..\..\src\Massive.Shared.cs">
       <Link>Massive.Shared.cs</Link>
     </Compile>
+    <Compile Include="ReadTests.cs" />
+    <Compile Include="WriteTests.cs" />
     <Compile Include="ConstantsEnums.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="ReadWriteTests.cs" />
-    <Compile Include="TableClasses\Customer.cs" />
+    <Compile Include="TableClasses\Film.cs" />
+    <Compile Include="TableClasses\Category.cs" />
     <Compile Include="TableClasses\Product.cs" />
   </ItemGroup>
   <ItemGroup>
